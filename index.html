@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Калькулятор объёма глав курсовой и ВКР</title>
-<meta name="description" content="Бесплатный офлайн-калькулятор: распределите страницы курсовой, ВКР или магистерской диссертации по разделам — введение, главы, заключение.">
+<meta name="description" content="Бесплатный офлайн-калькулятор: распределите страницы курсовой, ВКР или магистерской диссертации по разделам: введение, главы, заключение.">
 <style>
   :root {
     --bg: #f6f5f2;
@@ -88,11 +88,24 @@
   a { color: var(--accent); }
   .table-wrap { overflow-x: auto; }
 </style>
+<!-- Yandex.Metrika counter (только на calc.foxstudy.ru) -->
+<script>
+  (function () {
+    if (!/(^|\.)foxstudy\.ru$/.test(location.hostname)) return;
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    ym(113655312, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+  })();
+</script>
+<!-- /Yandex.Metrika counter -->
 </head>
 <body>
 <main>
   <h1>Калькулятор объёма глав курсовой и ВКР</h1>
-  <p class="lead">Введите объём работы — получите план по страницам для каждого раздела.</p>
+  <p class="lead">Введите объём работы, и калькулятор распределит страницы по разделам.</p>
 
   <section class="card">
     <div class="controls">
@@ -141,7 +154,7 @@
   <section class="card note">
     <p>Пропорции по умолчанию взяты из типовых методических указаний вузов. ГОСТ 7.32-2017 задаёт структуру и оформление, но не доли глав, поэтому сверяйтесь с методичкой своей кафедры.</p>
     <p>Список литературы и приложения обычно не входят в нормируемый объём. Знаки считаются из расчёта ~1800 знаков с пробелами на страницу (14 пт, интервал 1,5).</p>
-    <p>Как наполнить каждый раздел и оформить работу по ГОСТу — в справочнике <a href="https://foxstudy.ru/kak-pisat/" target="_blank" rel="noopener">«Как писать курсовую и дипломную работу»</a>.</p>
+    <p>Как наполнить каждый раздел и оформить работу по ГОСТу, читайте в справочнике <a href="https://foxstudy.ru/kak-pisat/" target="_blank" rel="noopener">«Как писать курсовую и дипломную работу»</a>.</p>
   </section>
 </main>
 
@@ -277,11 +290,11 @@
   function buildPlan() {
     var r = recalc();
     var typeName = typeEl.options[typeEl.selectedIndex].text;
-    var lines = [typeName + " — план объёма (" + r.total + " стр. основной части)", ""];
+    var lines = [typeName + ": план объёма (" + r.total + " стр. основной части)", ""];
     state.forEach(function (s, i) {
       lines.push(s.name + ": " + r.pages[i] + " стр. (~" + fmt(r.pages[i] * CHARS_PER_PAGE) + " знаков)");
     });
-    lines.push("", "Список литературы и приложения — сверх основного объёма.");
+    lines.push("", "Список литературы и приложения идут сверх основного объёма.");
     return lines.join("\n");
   }
 
