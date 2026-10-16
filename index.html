@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор объёма глав курсовой и ВКР</title>
+<meta name="description" content="Бесплатный офлайн-калькулятор: распределите страницы курсовой, ВКР или магистерской диссертации по разделам — введение, главы, заключение.">
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6b6b70;
+    --line: #e2e0da;
+    --accent: #d9622b;
+    --accent-soft: #fbe9df;
+    --ok: #2f8a4c;
+    --err: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161617;
+      --card: #1f1f21;
+      --text: #ececee;
+      --muted: #9a9aa0;
+      --line: #333336;
+      --accent: #f07a43;
+      --accent-soft: #3a2519;
+      --ok: #5cc27d;
+      --err: #ef6b5d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 6px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .controls { grid-template-columns: 1fr; } }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; color: var(--muted); }
+  select, input[type="number"] {
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 10px;
+    width: 100%;
+  }
+  select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  td input[type="number"] { width: 76px; text-align: right; padding: 6px 8px; }
+  td.pages { font-weight: 600; font-variant-numeric: tabular-nums; }
+  td.chars { color: var(--muted); font-variant-numeric: tabular-nums; }
+  tfoot td { border-bottom: none; font-weight: 600; }
+  .sum-ok { color: var(--ok); }
+  .sum-err { color: var(--err); }
+  .status { margin: 12px 0 0; font-size: .9rem; min-height: 1.4em; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .note { font-size: .88rem; color: var(--muted); }
+  .note p { margin: 0 0 8px; }
+  a { color: var(--accent); }
+  .table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Калькулятор объёма глав курсовой и ВКР</h1>
+  <p class="lead">Введите объём работы — получите план по страницам для каждого раздела.</p>
+
+  <section class="card">
+    <div class="controls">
+      <label class="field">Тип работы
+        <select id="type">
+          <option value="course">Курсовая работа</option>
+          <option value="bachelor" selected>ВКР бакалавра</option>
+          <option value="master">Магистерская диссертация</option>
+        </select>
+      </label>
+      <label class="field">Объём основной части, страниц
+        <input id="total" type="number" min="5" max="300" step="1" value="60">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Раздел</th>
+            <th class="num">%</th>
+            <th class="num">Страниц</th>
+            <th class="num">≈ знаков</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+        <tfoot>
+          <tr>
+            <td>Итого</td>
+            <td class="num" id="sumPct"></td>
+            <td class="num" id="sumPages"></td>
+            <td class="num" id="sumChars"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <div class="actions">
+      <button class="primary" id="copy">Скопировать план</button>
+      <button id="reset">Сбросить проценты</button>
+    </div>
+  </section>
+
+  <section class="card note">
+    <p>Пропорции по умолчанию взяты из типовых методических указаний вузов. ГОСТ 7.32-2017 задаёт структуру и оформление, но не доли глав, поэтому сверяйтесь с методичкой своей кафедры.</p>
+    <p>Список литературы и приложения обычно не входят в нормируемый объём. Знаки считаются из расчёта ~1800 знаков с пробелами на страницу (14 пт, интервал 1,5).</p>
+    <p>Как наполнить каждый раздел и оформить работу по ГОСТу — в справочнике <a href="https://foxstudy.ru/kak-pisat/" target="_blank" rel="noopener">«Как писать курсовую и дипломную работу»</a>.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var CHARS_PER_PAGE = 1800;
+
+  var PRESETS = {
+    course: {
+      total: 30,
+      sections: [
+        ["Введение", 8],
+        ["Глава 1. Теоретическая", 40],
+        ["Глава 2. Практическая", 47],
+        ["Заключение", 5]
+      ]
+    },
+    bachelor: {
+      total: 60,
+      sections: [
+        ["Введение", 6],
+        ["Глава 1. Теоретическая", 30],
+        ["Глава 2. Аналитическая", 32],
+        ["Глава 3. Рекомендации / проект", 27],
+        ["Заключение", 5]
+      ]
+    },
+    master: {
+      total: 80,
+      sections: [
+        ["Введение", 5],
+        ["Глава 1. Теоретико-методологическая", 28],
+        ["Глава 2. Аналитическая", 32],
+        ["Глава 3. Проектная / эмпирическая", 30],
+        ["Заключение", 5]
+      ]
+    }
+  };
+
+  var typeEl = document.getElementById("type");
+  var totalEl = document.getElementById("total");
+  var rowsEl = document.getElementById("rows");
+  var statusEl = document.getElementById("status");
+  var copyBtn = document.getElementById("copy");
+
+  var state = [];
+
+  function loadPreset(key, keepTotal) {
+    var p = PRESETS[key];
+    state = p.sections.map(function (s) { return { name: s[0], pct: s[1] }; });
+    if (!keepTotal) totalEl.value = p.total;
+    renderRows();
+    recalc();
+  }
+
+  function renderRows() {
+    rowsEl.innerHTML = "";
+    state.forEach(function (s, i) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td></td>" +
+        '<td class="num"><input type="number" min="0" max="100" step="1" aria-label="Процент"></td>' +
+        '<td class="num pages"></td>' +
+        '<td class="num chars"></td>';
+      tr.cells[0].textContent = s.name;
+      var input = tr.querySelector("input");
+      input.value = s.pct;
+      input.addEventListener("input", function () {
+        var v = parseFloat(input.value);
+        state[i].pct = isNaN(v) ? 0 : Math.max(0, v);
+        recalc();
+      });
+      rowsEl.appendChild(tr);
+    });
+  }
+
+  // Распределение целых страниц с сохранением суммы (метод наибольших остатков)
+  function distribute(total, pcts) {
+    var sum = pcts.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var raw = pcts.map(function (p) { return total * p / sum; });
+    var floors = raw.map(Math.floor);
+    var rest = total - floors.reduce(function (a, b) { return a + b; }, 0);
+    var order = raw
+      .map(function (r, i) { return { i: i, frac: r - Math.floor(r) }; })
+      .sort(function (a, b) { return b.frac - a.frac; });
+    for (var k = 0; k < rest; k++) floors[order[k % order.length].i]++;
+    return floors;
+  }
+
+  function fmt(n) { return n.toLocaleString("ru-RU"); }
+
+  function recalc() {
+    var total = Math.round(parseFloat(totalEl.value));
+    var validTotal = !isNaN(total) && total >= 5 && total <= 300;
+    var pcts = state.map(function (s) { return s.pct; });
+    var sumPct = pcts.reduce(function (a, b) { return a + b; }, 0);
+    var pctOk = Math.abs(sumPct - 100) < 0.001;
+
+    var pages = validTotal ? distribute(total, pcts) : pcts.map(function () { return 0; });
+    var trs = rowsEl.querySelectorAll("tr");
+    pages.forEach(function (p, i) {
+      trs[i].querySelector(".pages").textContent = validTotal ? p : "—";
+      trs[i].querySelector(".chars").textContent = validTotal ? fmt(p * CHARS_PER_PAGE) : "—";
+    });
+
+    var sumPctEl = document.getElementById("sumPct");
+    sumPctEl.textContent = fmt(Math.round(sumPct * 10) / 10) + "%";
+    sumPctEl.className = "num " + (pctOk ? "sum-ok" : "sum-err");
+    document.getElementById("sumPages").textContent = validTotal ? total : "—";
+    document.getElementById("sumChars").textContent = validTotal ? fmt(total * CHARS_PER_PAGE) : "—";
+
+    if (!validTotal) {
+      setStatus("Укажите объём от 5 до 300 страниц.", true);
+    } else if (!pctOk) {
+      var diff = Math.round((100 - sumPct) * 10) / 10;
+      setStatus("Сумма процентов должна быть 100%. " +
+        (diff > 0 ? "Не хватает " + fmt(diff) + "%." : "Лишние " + fmt(-diff) + "%.") +
+        " Страницы пересчитаны пропорционально.", true);
+    } else {
+      setStatus("", false);
+    }
+    copyBtn.disabled = !validTotal;
+    return { total: total, pages: pages };
+  }
+
+  function setStatus(text, isErr) {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (isErr ? " sum-err" : "");
+  }
+
+  function buildPlan() {
+    var r = recalc();
+    var typeName = typeEl.options[typeEl.selectedIndex].text;
+    var lines = [typeName + " — план объёма (" + r.total + " стр. основной части)", ""];
+    state.forEach(function (s, i) {
+      lines.push(s.name + ": " + r.pages[i] + " стр. (~" + fmt(r.pages[i] * CHARS_PER_PAGE) + " знаков)");
+    });
+    lines.push("", "Список литературы и приложения — сверх основного объёма.");
+    return lines.join("\n");
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy") ? resolve() : reject(); }
+      catch (e) { reject(e); }
+      finally { document.body.removeChild(ta); }
+    });
+  }
+
+  copyBtn.addEventListener("click", function () {
+    copyText(buildPlan()).then(function () {
+      var old = copyBtn.textContent;
+      copyBtn.textContent = "Скопировано ✓";
+      setTimeout(function () { copyBtn.textContent = old; }, 1500);
+    }, function () {
+      setStatus("Не удалось скопировать. Выделите таблицу вручную.", true);
+    });
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    loadPreset(typeEl.value, true);
+  });
+  typeEl.addEventListener("change", function () { loadPreset(typeEl.value, false); });
+  totalEl.addEventListener("input", recalc);
+
+  loadPreset(typeEl.value, false);
+})();
+</script>
+</body>
+</html>
